@@ -16,16 +16,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"ekvproxy/proxy/log"
-	"github.com/pingcap/pd/pd-client"
+	"github.com/pingcap/pd/client"
 	"github.com/pingcap/tidb/store/tikv"
+	"github.com/pingcap/tidb/store/tikv/gcworker"
 	"github.com/pingcap/tidb/store/tikv/oracle"
 	"github.com/twinj/uuid"
 	goctx "golang.org/x/net/context"
+	"os"
 	"strings"
+	"tedis/proxy/log"
 	"time"
-	"github.com/pingcap/tidb/store/tikv/gcworker"
 )
 
 var (
@@ -45,7 +45,7 @@ func DoGc(pdservers string) error {
 	}
 
 	etcdAddrs := strings.Split(pdservers, ",")
-	pdCli, err := pd.NewClient(etcdAddrs)
+	pdCli, err := pd.NewClient(etcdAddrs, pd.SecurityOption{})
 	defer pdCli.Close()
 	if err != nil {
 		log.Fatal(err)
@@ -65,10 +65,10 @@ func DoGc(pdservers string) error {
 
 		safePoint := now.Add(-time.Minute * 10)
 		sf = oracle.ComposeTS(oracle.GetPhysical(safePoint), 0)
-		break;
+		break
 	}
-	kvstore := store.(tikv.Storage);
-	return gcworker.RunGCJob(ctx, kvstore, sf, uuid.NewV4().String())
+	kvstore := store.(tikv.Storage)
+	return gcworker.RunGCJob(ctx, kvstore, sf, uuid.NewV4().String(), 1)
 	//return tikv.RunGCJob(ctx, store, sf, uuid.NewV4().String())
 
 }

@@ -14,11 +14,11 @@
 package handler
 
 import (
-	"ekvproxy/proxy/structure"
 	"github.com/juju/errors"
-	"ekvproxy/proxy/log"
 	goctx "golang.org/x/net/context"
-	"ekvproxy/proxy/prometheus"
+	"tedis/proxy/log"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/structure"
 )
 
 func (h *TxTikvHandler) HSET(key []byte, field []byte, value []byte) (int, error) {

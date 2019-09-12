@@ -30,9 +30,9 @@ package structure
 import (
 	"bytes"
 
-	"ekvproxy/proxy/util"
 	"github.com/juju/errors"
 	"github.com/vmihailenco/msgpack"
+	"tedis/proxy/util"
 	//"github.com/prometheus/common/log"
 	"strconv"
 )
@@ -368,7 +368,7 @@ func (t *TxStructure) MergedHGetInt64(key []byte, field []byte) (int64, error) {
 
 func (t *TxStructure) MergedHIncInt64(key []byte, field []byte, step int64) (int64, error) {
 	val, err := t.MergedHGet(key, field)
-	if (err == nil && (val == nil || len(val) == 0)) {
+	if err == nil && (val == nil || len(val) == 0) {
 		_, err = t.MergedHSet(key, field, []byte(strconv.FormatInt(step, 10)))
 		if err != nil {
 			return 0, errors.Trace(err)

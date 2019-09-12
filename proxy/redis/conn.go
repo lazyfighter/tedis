@@ -29,12 +29,12 @@ package redis
 
 import (
 	"bufio"
-	"sync"
-	"net"
-	"time"
 	"fmt"
 	"github.com/juju/errors"
-	"ekvproxy/proxy/log"
+	"net"
+	"sync"
+	"tedis/proxy/log"
+	"time"
 )
 
 type Conn struct {

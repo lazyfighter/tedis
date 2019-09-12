@@ -2,8 +2,8 @@ package slave
 
 import (
 	"errors"
-	"ekvproxy/ttltask/GoSlaves/jobs"
 	"sync"
+	"tedis/ttltask/GoSlaves/jobs"
 )
 
 var (

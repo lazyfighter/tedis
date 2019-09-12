@@ -14,20 +14,19 @@
 package handler
 
 import (
-	"ekvproxy/proxy/log"
-	"ekvproxy/proxy/config"
+	"tedis/proxy/config"
+	"tedis/proxy/log"
 )
 
-func (h *TxTikvHandler) AUTH(pwd string) (error) {
-	log.Infof("passwd [%s] , conf pwd [%s]", pwd, config.ConfigData.Passwd)
-	if pwd == config.ConfigData.Passwd {
+func (h *TxTikvHandler) AUTH(pwd string) error {
+	log.Infof("passwd [%s] , conf pwd [%s]", pwd, config.GetProxyConfig().Password)
+	if pwd == config.GetProxyConfig().Password {
 		return nil
 	} else {
 		return ErrAuthPwd
 	}
 }
 
-func (h *TxTikvHandler) NOAUTH() (error) {
-
+func (h *TxTikvHandler) NOAUTH() error {
 	return ErrAuthPwd
 }

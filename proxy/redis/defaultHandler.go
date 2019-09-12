@@ -35,9 +35,9 @@ import (
 )
 
 type (
-	HashValue map[string][]byte
-	HashHash map[string]HashValue
-	HashSub map[string][]*ChannelWriter
+	HashValue   map[string][]byte
+	HashHash    map[string]HashValue
+	HashSub     map[string][]*ChannelWriter
 	HashBrStack map[string]*Stack
 )
 

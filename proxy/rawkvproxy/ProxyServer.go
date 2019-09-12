@@ -14,22 +14,23 @@
 package main
 
 import (
-	"os"
-	"fmt"
-	"flag"
-	"ekvproxy/proxy/log"
-	"github.com/pingcap/tidb/store/tikv"
-	"strings"
-	"ekvproxy/proxy/redis"
-	"ekvproxy/proxy/config"
 	"errors"
+	"flag"
+	"fmt"
+	tikvConfig "github.com/pingcap/tidb/config"
+	"github.com/pingcap/tidb/store/tikv"
 	"github.com/pingcap/tidb/util/codec"
-	"ekvproxy/proxy/handler"
-	"ekvproxy/proxy/util"
-	"ekvproxy/proxy/prometheus"
-	"net/http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
+	"os"
 	"strconv"
+	"strings"
+	"tedis/proxy/config"
+	"tedis/proxy/handler"
+	"tedis/proxy/log"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/redis"
+	"tedis/proxy/util"
 )
 
 var (
@@ -83,9 +84,9 @@ func (h *TikvHandler) GET(key []byte) ([]byte, error) {
 
 }
 
-func (h *TikvHandler) AUTH(pwd string) (error) {
-	log.Infof("passwd [%s] , conf pwd [%s]", pwd, config.ConfigData.Passwd)
-	//if pwd == config.ConfigData.Passwd {
+func (h *TikvHandler) AUTH(pwd string) error {
+	log.Infof("passwd [%s] , conf pwd [%s]", pwd, config.GetProxyConfig().Password)
+	//if pwd == config.ProxyConfig.Passwd {
 	if pwd == "1234" {
 		//session.Authed = true
 		return nil
@@ -94,7 +95,7 @@ func (h *TikvHandler) AUTH(pwd string) (error) {
 	}
 }
 
-func (h *TikvHandler) NOAUTH() (error) {
+func (h *TikvHandler) NOAUTH() error {
 
 	return errors.New("Invalid passwd")
 }
@@ -110,7 +111,7 @@ func (h *TikvHandler) SET(key []byte, val []byte) error {
 	prometheus.LengthHistogram.WithLabelValues("set").Observe(float64(len(val)))
 
 	if *compression {
-		val = util.Compress(val);
+		val = util.Compress(val)
 		prometheus.LengthHistogram.WithLabelValues("compress_set").Observe(float64(len(val)))
 	}
 
@@ -195,7 +196,8 @@ func main() {
 		fmt.Println("git version: ", GitHash)
 		os.Exit(0)
 	}
-	config.ParseConf(confPath, &config.ConfigData)
+	proxyConfig := &config.ProxyConfig{}
+	config.ParseConf(*confPath, proxyConfig)
 
 	defer func() {
 		if msg := recover(); msg != nil {
@@ -212,7 +214,7 @@ func main() {
 	log.Info("ConnTimeout:", *connTimeout)
 	log.Info("compression:", *compression)
 
-	cli, err := tikv.NewRawKVClient(strings.Split(*pdAddr, ","))
+	cli, err := tikv.NewRawKVClient(strings.Split(*pdAddr, ","), tikvConfig.Security{})
 	if err != nil {
 		log.Fatal(err)
 	}

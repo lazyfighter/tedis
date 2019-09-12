@@ -14,31 +14,32 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"os"
 	"fmt"
-	"ekvproxy/proxy/log"
-	"strings"
-	"runtime"
-	"ekvproxy/proxy/structure"
+	"github.com/pingcap/pd/client"
 	"github.com/pingcap/tidb/store/tikv"
+	"os"
+	"runtime"
+	"strings"
+	"tedis/proxy/log"
+	"tedis/proxy/structure"
 	//"github.com/pingcap/tidb/mysql"
 
-	"ekvproxy/proxy/util"
-	"ekvproxy/proxy/handler"
-	"github.com/pingcap/tidb/kv"
-	"github.com/pingcap/pd/pd-client"
 	"bytes"
-	"github.com/juju/errors"
-	"net/url"
-	goctx "golang.org/x/net/context"
 	"github.com/cznic/mathutil"
-	"ekvproxy/ttltask/GoSlaves"
-	"time"
-	"ekvproxy/proxy/prometheus"
-	"net/http"
+	"github.com/juju/errors"
+	"github.com/pingcap/tidb/kv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	goctx "golang.org/x/net/context"
+	"net/http"
+	"net/url"
 	"strconv"
+	"tedis/proxy/handler"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/util"
+	"tedis/ttltask/GoSlaves"
+	"time"
 )
 
 var (
@@ -46,7 +47,7 @@ var (
 	GitHash                    = ""
 	BuildTime                  = ""
 	g_count_seek_region uint64 = 0
-	g_sleep_flag        bool   = false;
+	g_sleep_flag        bool   = false
 	g_count_consume     int    = 0
 
 	versionflag = flag.Bool("v", false, "Version")
@@ -97,15 +98,15 @@ func main() {
 	}
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	pdcli, err := pd_client(fmt.Sprintf("tikv://%s?cluster=1", *pdAddr))
-	if (err != nil) {
+	if err != nil {
 		log.Fatal(err)
 	}
 	defer pdcli.Close()
 
 	rcache := tikv.NewRegionCache(pdcli)
-	bo := tikv.NewBackoffer(5000, goctx.Background())
+	bo := tikv.NewBackoffer(context.Background(), 5000)
 	regions, err := rcache.ListRegionIDsInKeyRange(bo, nil, nil)
-	if (err != nil) {
+	if err != nil {
 		log.Fatal(err)
 	}
 	regionsCount := len(regions)
@@ -115,7 +116,7 @@ func main() {
 	}
 	chunk := regionsCount/(*concurrent) + 1
 	chunkcn := regionsCount / chunk
-	if (regionsCount%chunk > 0) {
+	if regionsCount%chunk > 0 {
 		chunkcn++
 	}
 
@@ -131,13 +132,13 @@ func main() {
 		prometheus.CmdHistogram.WithLabelValues("ttl_del").Observe(float64(del_time))
 		if del_time > (time.Duration(*flagConsume) * time.Millisecond) {
 			g_count_consume++
-			for (g_count_consume > ((*concurrent) * (*pertConsume) / 100)) {
+			for g_count_consume > ((*concurrent) * (*pertConsume) / 100) {
 				time.Sleep(time.Duration(200) * time.Millisecond)
 			}
 			//log.Errorf("zcf----test--- ttl_del time: %d ms", del_time/time.Millisecond)
 			return nil
 		}
-		g_count_consume --
+		g_count_consume--
 		return nil
 	}, nil)
 	if err := sp.Open(); err != nil {
@@ -226,7 +227,7 @@ func pd_client(path string) (pd.Client, error) {
 		return nil, err
 	}
 
-	pdCli, err := pd.NewClient(etcdAddrs)
+	pdCli, err := pd.NewClient(etcdAddrs, pd.SecurityOption{})
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +247,7 @@ func ttl_task_chunk(sp *slaves.SlavePool, store kv.Storage, rcache *tikv.RegionC
 	log.Info("concurrent regions :{", regions, "}")
 	prefix := []byte{0x00}
 
-	bo := tikv.NewBackoffer(5000, goctx.Background())
+	bo := tikv.NewBackoffer(context.Background(), 5000)
 
 	var id uint64
 	var region *tikv.KeyLocation
@@ -256,28 +257,28 @@ func ttl_task_chunk(sp *slaves.SlavePool, store kv.Storage, rcache *tikv.RegionC
 			log.Fatal(err)
 		}
 		region, err = rcache.LocateRegionByID(bo, id)
-		if (err != nil) {
+		if err != nil {
 			txn.Commit(goctx.Background())
 			log.Errorf("concurrent LocationRegionById error:%s", err.Error())
 			continue
 		}
 		g_count_seek_region++
-		iter, err := txn.Seek(region.StartKey)
+		iter, err := txn.Iter(region.StartKey, region.EndKey)
 		if err != nil {
 			log.Errorf("zcf----test---concurrent seek regionid [%d] error:%s", id, err.Error())
 			count_error++
 			iter.Close()
-			txn.Commit(goctx.Background());
+			txn.Commit(goctx.Background())
 			txn, err = store.Begin()
 			if err != nil {
 				log.Fatal(err)
 			}
 			//break,
-			iter, err = txn.Seek(region.StartKey)
+			iter, err = txn.Iter(region.StartKey, region.EndKey)
 			if err != nil {
 				txn.Commit(goctx.Background())
 				log.Errorf("concurrent seek regionid [%d] error:%s", id, err.Error())
-				break;
+				break
 			}
 		}
 		for iter.Valid() {
@@ -285,7 +286,7 @@ func ttl_task_chunk(sp *slaves.SlavePool, store kv.Storage, rcache *tikv.RegionC
 				//log.Infof("concurrent region [%d] break key [%s]",id, iter.Key())
 				break
 			}
-			prev_iter_key := iter.Key();
+			prev_iter_key := iter.Key()
 			tp, key, _ := structure.DecodeMetaKey(prefix, iter.Key())
 			if structure.TypeFlag(tp) == structure.MetaCode {
 				_, expireAt, _ := structure.DecodeMetaValue(iter.Value())
@@ -306,10 +307,10 @@ func ttl_task_chunk(sp *slaves.SlavePool, store kv.Storage, rcache *tikv.RegionC
 				if err != nil {
 					log.Fatal(err)
 				}
-				iter, err = txn.Seek(prev_iter_key)
+				iter, err = txn.Iter(prev_iter_key, region.EndKey)
 				if err != nil {
 					log.Errorf("concurrent seek regionid [%d] error:%s", id, err.Error())
-					break;
+					break
 				}
 			}
 			if ((count_del - count_print) / 100000) > 0 {
@@ -320,10 +321,10 @@ func ttl_task_chunk(sp *slaves.SlavePool, store kv.Storage, rcache *tikv.RegionC
 				if err != nil {
 					log.Fatal(err)
 				}
-				iter, err = txn.Seek(prev_iter_key)
+				iter, err = txn.Iter(prev_iter_key, region.EndKey)
 				if err != nil {
 					log.Errorf("concurrent seek regionid [%d] error:%s", id, err.Error())
-					break;
+					break
 				}
 				log.Errorf("zcf----test---now regionid [%d] delete: [%d]", id, count_now)
 			}

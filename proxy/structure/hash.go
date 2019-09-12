@@ -29,14 +29,14 @@ package structure
 
 import (
 	"bytes"
+	"github.com/pingcap/parser/terror"
 	"strconv"
 
-	"ekvproxy/proxy/util"
 	"github.com/juju/errors"
 	"github.com/pingcap/tidb/kv"
-	"github.com/pingcap/tidb/terror"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/util"
 	"time"
-	"ekvproxy/proxy/prometheus"
 )
 
 // HashPair is the pair for (field, value) in a hash.
@@ -318,33 +318,33 @@ func (t *TxStructure) HClear(key []byte) error {
 }
 
 func (t *TxStructure) iterateHash(key []byte, fn func(k []byte, v []byte) error) error {
-	dataPrefix := t.hashDataKeyPrefix(key)
-	it, err := t.reader.Seek(dataPrefix)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	var field []byte
-
-	for it.Valid() {
-		if !it.Key().HasPrefix(dataPrefix) {
-			break
-		}
-
-		_, field, err = t.decodeHashDataKey(it.Key())
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		if err = fn(field, it.Value()); err != nil {
-			return errors.Trace(err)
-		}
-
-		err = it.Next()
-		if err != nil {
-			return errors.Trace(err)
-		}
-	}
+	//dataPrefix := t.hashDataKeyPrefix(key)
+	//it, err := t.reader.Seek(dataPrefix)
+	//if err != nil {
+	//	return errors.Trace(err)
+	//}
+	//
+	//var field []byte
+	//
+	//for it.Valid() {
+	//	if !it.Key().HasPrefix(dataPrefix) {
+	//		break
+	//	}
+	//
+	//	_, field, err = t.decodeHashDataKey(it.Key())
+	//	if err != nil {
+	//		return errors.Trace(err)
+	//	}
+	//
+	//	if err = fn(field, it.Value()); err != nil {
+	//		return errors.Trace(err)
+	//	}
+	//
+	//	err = it.Next()
+	//	if err != nil {
+	//		return errors.Trace(err)
+	//	}
+	//}
 
 	return nil
 }

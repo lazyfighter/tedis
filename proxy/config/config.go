@@ -14,26 +14,30 @@
 package config
 
 import (
-	"io/ioutil"
 	"gopkg.in/yaml.v2"
-	"ekvproxy/proxy/log"
+	"io/ioutil"
+	"tedis/proxy/log"
 )
 
-var ConfigData Conf;
+var proxyConfig ProxyConfig
 
-type Conf struct {
+type ProxyConfig struct {
 	Port       int    `yaml:"port"`
-	TurnOnAuth bool   `yaml:trun_on_auth`
-	Passwd     string `yaml:"passwd"`
-	Pdaddr     string `yaml:"pdaddr"`
-	Logpath    string `yaml:"logfile"`
-	Loglevel   string `yaml:"loglevel"`
-	Ssaddr     string `yaml:"statsaddr"`
-	Ssname     string `yaml:"stats"`
+	TurnOnAuth bool   `yaml:turnOnAuth`
+	Password   string `yaml:"password"`
+	PdAddr     string `yaml:"pdAddr"`
+	LogPath    string `yaml:"logPath"`
+	LogLevel   string `yaml:"logLevel"`
+	SsAddr     string `yaml:"statsAddr"`
+	SsName     string `yaml:"stats"`
 }
 
-func ParseConf(path *string, config *Conf) () {
-	yamlFile, err := ioutil.ReadFile(*path)
+func ParseConf(path string, config *ProxyConfig) {
+	if path == "" {
+		log.Info("config path is blank use default proxy config")
+		return
+	}
+	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Errorf("read config %s file error: %s", path, err)
 	}
@@ -41,4 +45,8 @@ func ParseConf(path *string, config *Conf) () {
 	if err != nil {
 		log.Errorf("parse config %s file error: %s", path, err)
 	}
+}
+
+func GetProxyConfig() ProxyConfig {
+	return proxyConfig
 }

@@ -14,11 +14,9 @@
 package handler
 
 import (
-	"ekvproxy/proxy/uuid"
-	"ekvproxy/proxy/log"
-	"github.com/pingcap/tidb/kv"
 	"github.com/juju/errors"
-	"ekvproxy/proxy/prometheus"
+	"tedis/proxy/log"
+	"tedis/proxy/uuid"
 )
 
 const (
@@ -70,10 +68,10 @@ func CallWithRetry(context *RequestContext, fn func() (interface{}, error)) (int
 			return res, err
 		}
 
-		if !kv.IsRetryableError(err) {
-			prometheus.CmdCounter.WithLabelValues("error" + context.cmd).Inc()
-			return res, err
-		}
+		//if !kv.IsRetryableError(err) {
+		//	prometheus.CmdCounter.WithLabelValues("error" + context.cmd).Inc()
+		//	return res, err
+		//}
 	}
 
 }

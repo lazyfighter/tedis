@@ -31,17 +31,17 @@ import (
 
 // UUID layout variants.
 const (
-	VariantNCS       = iota
-	VariantRFC4122   
-	VariantMicrosoft 
-	VariantFuture    
+	VariantNCS = iota
+	VariantRFC4122
+	VariantMicrosoft
+	VariantFuture
 )
 
 // UUID DCE domains.
 const (
 	DomainPerson = iota
-	DomainGroup  
-	DomainOrg    
+	DomainGroup
+	DomainOrg
 )
 
 // Difference in 100-nanosecond intervals between

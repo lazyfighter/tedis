@@ -19,10 +19,10 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
-	"path/filepath"
 )
 
 const (
@@ -36,7 +36,7 @@ const (
 
 type (
 	LogLevel int
-	LogType int
+	LogType  int
 )
 
 const (

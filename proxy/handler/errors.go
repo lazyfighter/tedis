@@ -15,7 +15,7 @@ package handler
 
 import (
 	"github.com/juju/errors"
-	"ekvproxy/proxy/log"
+	"tedis/proxy/log"
 )
 
 var (
@@ -23,7 +23,7 @@ var (
 	ErrKeySize   = errors.New("invalid key size")
 	ErrValueSize = errors.New("invalid value size")
 	ErrValueNil  = errors.New("value is null")
-	ErrAuthPwd   = errors.New("Invalid passwd")
+	ErrAuthPwd   = errors.New("Invalid password")
 )
 
 func errArguments(format string, v ...interface{}) error {

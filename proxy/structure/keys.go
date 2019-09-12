@@ -14,12 +14,10 @@
 package structure
 
 import (
-	"ekvproxy/proxy/util"
 	"github.com/juju/errors"
-	//"github.com/pingcap/tidb/terror"
-	//"github.com/pingcap/tidb/kv"
-	"github.com/pingcap/tidb/terror"
+	"github.com/pingcap/parser/terror"
 	"github.com/pingcap/tidb/kv"
+	"tedis/proxy/util"
 )
 
 var (

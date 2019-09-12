@@ -61,8 +61,8 @@ func init() {
 	prometheus.MustRegister(LengthHistogram)
 }
 
-func PrintTimeOut(timedata int, method string) {
-	if timedata > TimeOutThresholds {
+func PrintTimeOut(timeData int, method string) {
+	if timeData > TimeOutThresholds {
 		TimeOutCounter.WithLabelValues(method).Inc()
 	}
 }

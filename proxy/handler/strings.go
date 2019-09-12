@@ -14,12 +14,12 @@
 package handler
 
 import (
-	"ekvproxy/proxy/structure"
 	"github.com/juju/errors"
-	"ekvproxy/proxy/log"
-	"ekvproxy/proxy/util"
 	goctx "golang.org/x/net/context"
-	"ekvproxy/proxy/prometheus"
+	"tedis/proxy/log"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/structure"
+	"tedis/proxy/util"
 )
 
 func (h *TxTikvHandler) SET(key []byte, value []byte) ([]byte, error) {
@@ -229,7 +229,7 @@ func (h *TxTikvHandler) INCR(key []byte) (int64, error) {
 	}
 	tx := structure.NewStructure(txn, txn, h.NameSpace, h.IgnoreTTL)
 	//res, ierr := tx.HSet(key, field, value)
-	var step int64 = 1;
+	var step int64 = 1
 	res, ierr := tx.IncInt64(key, step)
 	if ierr == nil {
 		ierr = txn.Commit(goctx.Background())

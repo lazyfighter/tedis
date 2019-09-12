@@ -31,10 +31,10 @@ import (
 	"strconv"
 
 	"github.com/juju/errors"
+	"github.com/pingcap/parser/terror"
 	"github.com/pingcap/tidb/kv"
-	"github.com/pingcap/tidb/terror"
-	"ekvproxy/proxy/util"
-	"ekvproxy/proxy/prometheus"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/util"
 )
 
 // Set sets the string value of the key.
@@ -94,7 +94,7 @@ func (t *TxStructure) SetWithTTL(key []byte, value []byte, ttl int64) ([]byte, e
 		return nil, errors.Trace(verr)
 	}
 
-	var expireAt int64;
+	var expireAt int64
 	if v, ok := util.TTLsToExpireAt(ttl); ok && v > 0 {
 		expireAt = v
 	} else {
@@ -142,7 +142,7 @@ func (t *TxStructure) GetInt64(key []byte) (int64, error) {
 
 func (t *TxStructure) IncInt64(key []byte, step int64) (int64, error) {
 	val, err := t.Get(key)
-	if (err == nil && (val == nil || len(val) == 0)) {
+	if err == nil && (val == nil || len(val) == 0) {
 		_, err = t.Set(key, []byte(strconv.FormatInt(step, 10)))
 		if err != nil {
 			return 0, errors.Trace(err)

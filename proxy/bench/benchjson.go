@@ -14,13 +14,13 @@
 package main
 
 import (
+	"bytes"
+	"compress/zlib"
 	"encoding/json"
-	"time"
 	"fmt"
 	"github.com/vmihailenco/msgpack"
-	"compress/zlib"
-	"bytes"
 	"io"
+	"time"
 )
 
 func main() {

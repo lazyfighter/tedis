@@ -14,93 +14,86 @@
 package main
 
 import (
-	"os"
 	"flag"
 	"fmt"
-	"ekvproxy/proxy/handler"
-	"ekvproxy/proxy/redis"
-	"ekvproxy/proxy/log"
 	"github.com/pingcap/tidb/store/tikv"
-	"strings"
-	"ekvproxy/proxy/config"
-	"net/http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
+	"os"
 	"strconv"
-	"ekvproxy/proxy/prometheus"
+	"strings"
+	"tedis/proxy/config"
+	"tedis/proxy/handler"
+	"tedis/proxy/log"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/redis"
 )
 
 var (
 	Version        = ""
 	GitHash        = ""
 	BuildTime      = ""
-	versionflag    = flag.Bool("v", false, "Version")
+	versionFlag    = flag.Bool("v", false, "Version")
 	serverPort     = flag.Int("port", 6379, "listen port,default: 6379")
-	confPath       = flag.String("conf", "conf.yaml", "config file of proxy")
+	confPath       = flag.String("conf", "", "config file of proxy")
 	pdAddr         = flag.String("pd", "127.0.0.1:2379", "pd address,default:localhost:2379")
 	logPath        = flag.String("lp", "", "log file path, if empty, default:stdout")
-	logLevel       = flag.String("ll", "info", "log level:INFO|WARN|ERROR default:INFO")
+	logLevel       = flag.String("ll", "", "log level:DEBUG|WARN|INFO|ERROR default:DEBUG")
 	logMaxKeep     = flag.Uint("kpdays", 7, "keep log days for proxy")
 	ignoreTTL      = flag.Bool("it", false, "ignore ttl when read,default false")
 	connTimeout    = flag.Int("ct", 60*3, "connect timeout(s),default:180s")
 	TimeOutData    = flag.Int("td", 1500, "request time out data")
-	PrometheusPort = flag.Int("pp", 8080, "prometheus port,defalut port 8080")
+	PrometheusPort = flag.Int("pp", 8080, "prometheus port,default port 8080")
 )
 
 func main() {
 	flag.Parse()
-	if *versionflag {
+	if *versionFlag {
 		fmt.Println("version: ", Version)
 		fmt.Println("build time: ", BuildTime)
 		fmt.Println("git version: ", GitHash)
 		os.Exit(0)
 	}
-	config.ParseConf(confPath, &config.ConfigData)
-	defer func() {
-		if msg := recover(); msg != nil {
-			log.Errorf("Panic: %v\n", msg)
-		}
-	}()
 
-	initlog()
+	proxyConfig := &config.ProxyConfig{}
+	config.ParseConf(*confPath, proxyConfig)
+
+	initLog()
 	prometheus.TimeOutThresholds = *TimeOutData
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		log.Info("prometheus listen port", ":"+strconv.Itoa(*PrometheusPort))
+		log.Info("prometheus listen port:", *PrometheusPort)
 		http.ListenAndServe(":"+strconv.Itoa(*PrometheusPort), nil)
 	}()
 
 	log.Info("serverPort:", *serverPort)
 	log.Info("pdAddr:", *pdAddr)
-	log.Info("logpath:", *logPath)
-	log.Info("logpaht:", *logLevel)
+	log.Info("logPath:", *logPath)
+	log.Info("logLevel:", *logLevel)
 	log.Info("ignoreTTL:", *ignoreTTL)
 	log.Info("ConnTimeout:", *connTimeout)
 
 	driver := tikv.Driver{}
 	store, err := driver.Open(fmt.Sprintf("tikv://%s?disableGC=true", *pdAddr))
 	if err != nil {
-		log.Fatal(err)
+		log.Error("creates an TiKV storage with given pdAddr", proxyConfig.PdAddr, err)
+		panic(err)
 	}
-	myhandler := &handler.TxTikvHandler{store, []byte{0x00}, *ignoreTTL}
+	kvHandler := &handler.TxTikvHandler{Store: store, NameSpace: []byte{0x00}, IgnoreTTL: *ignoreTTL}
 
-	srv, err := redis.NewServer(redis.DefaultConfig().Port(*serverPort).Handler(myhandler), *connTimeout)
+	srv, err := redis.NewServer(redis.DefaultConfig().Port(*serverPort).Handler(kvHandler), *connTimeout)
 	if err != nil {
+		log.Error("creates a redis server error", err)
 		panic(err)
 	}
 
 	if err := srv.ListenAndServe(); err != nil {
+		log.Error("redis listen port:", proxyConfig.Port, " error:", err)
 		panic(err)
 	}
 }
 
-func initlog() {
-	if len(*logPath) > 0 {
-		log.SetHighlighting(false)
-		err := log.SetOutputByName(*logPath)
-		if err != nil {
-			log.Fatalf("set log name failed - %s", err)
-		}
-	}
+func initLog() {
 
 	switch strings.ToUpper(*logLevel) {
 	case "INFO":
@@ -110,7 +103,16 @@ func initlog() {
 	case "WARN":
 		log.SetLevel(log.LOG_LEVEL_WARN)
 	default:
-		log.SetLevel(log.LOG_LEVEL_INFO)
+		log.SetLevel(log.LOG_LEVEL_DEBUG)
+	}
+
+	if len(*logPath) > 0 {
+		log.SetHighlighting(false)
+		log.Debugf("log path: %s, log keep: %u", *logPath, *logMaxKeep)
+		err := log.SetOutputByName(*logPath)
+		if err != nil {
+			log.Fatalf("set log name failed - %s", err)
+		}
 	}
 
 	log.SetRotateByDay()

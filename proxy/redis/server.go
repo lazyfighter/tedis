@@ -33,17 +33,17 @@ package redis
 
 import (
 	"fmt"
-	"ekvproxy/proxy/log"
+	"github.com/juju/errors"
 	"net"
+	"os"
 	"reflect"
-	"ekvproxy/proxy/session"
+	"runtime/debug"
 	"strings"
 	"sync"
+	"tedis/proxy/log"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/session"
 	"time"
-	"github.com/juju/errors"
-	"os"
-	"runtime/debug"
-	"ekvproxy/proxy/prometheus"
 )
 
 type Server struct {

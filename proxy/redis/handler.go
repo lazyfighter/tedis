@@ -30,11 +30,11 @@ package redis
 import (
 	"reflect"
 	"strings"
+	"tedis/proxy/config"
+	"tedis/proxy/log"
+	"tedis/proxy/prometheus"
+	"tedis/proxy/session"
 	"time"
-	"ekvproxy/proxy/session"
-	"ekvproxy/proxy/config"
-	"ekvproxy/proxy/log"
-	"ekvproxy/proxy/prometheus"
 )
 
 type HandlerFn func(r *Request) (ReplyWriter, error)
@@ -77,9 +77,9 @@ func (srv *Server) Apply(r *Request, session *session.Session) (reply ReplyWrite
 		}
 	}()
 
-	log.Info(r)
+	log.Debug(r)
 	if method == "set" && len(r.Args) == 3 {
-		method = "setwithttl";
+		method = "setwithttl"
 		//log.Info(method)
 	} else if method == "set" && len(r.Args) == 5 {
 		method = "setwithttl"
@@ -98,7 +98,7 @@ func (srv *Server) Apply(r *Request, session *session.Session) (reply ReplyWrite
 	if packLen > 5*1024*1024 {
 		return ErrArgsTooLong, nil
 	}
-	if config.ConfigData.TurnOnAuth {
+	if config.GetProxyConfig().TurnOnAuth {
 		if !session.Authed && method == "auth" {
 			return fn(r)
 		} else if !session.Authed {

@@ -14,10 +14,10 @@
 package util
 
 import (
-	"math"
 	"fmt"
-	"strconv"
 	"github.com/juju/errors"
+	"math"
+	"strconv"
 )
 
 func Num64(i interface{}) interface{} {

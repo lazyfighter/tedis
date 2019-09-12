@@ -2,8 +2,8 @@ package slaves
 
 import (
 	"errors"
-	"ekvproxy/ttltask/GoSlaves/slave"
 	"math"
+	"tedis/ttltask/GoSlaves/slave"
 )
 
 var (
@@ -82,5 +82,5 @@ func (sp *SlavePool) WorkQueueLen() int {
 		count += s.ToDo()
 	}
 
-	return count;
+	return count
 }

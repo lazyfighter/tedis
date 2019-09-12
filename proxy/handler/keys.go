@@ -14,10 +14,10 @@
 package handler
 
 import (
-	"ekvproxy/proxy/structure"
 	"github.com/juju/errors"
-	"ekvproxy/proxy/log"
 	goctx "golang.org/x/net/context"
+	"tedis/proxy/log"
+	"tedis/proxy/structure"
 )
 
 func (h *TxTikvHandler) DEL(keys [][]byte) (int, error) {

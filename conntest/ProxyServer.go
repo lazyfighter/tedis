@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"ekvproxy/proxy/log"
 	"strings"
-	"ekvproxy/proxy/redis"
+	"tedis/proxy/log"
+	"tedis/proxy/redis"
 )
 
 var (
